@@ -55,12 +55,22 @@ class PomodoroTimer:
         self.remaining_seconds = self.total_seconds
 
     def adjust_time(self, delta_seconds: int) -> None:
-        """Add or subtract seconds from remaining time (e.g. +60s / -60s)."""
-        new_remaining = self.remaining_seconds + delta_seconds
-        new_remaining = max(0, min(new_remaining, 99 * 60 + 59))
-        self.remaining_seconds = new_remaining
-        if new_remaining > self.total_seconds:
-            self.total_seconds = new_remaining
+        """Add or subtract seconds from the timer.
+
+        When the timer is STOPPED (before starting), adjusting time updates both
+        total_seconds and remaining_seconds, keeping completion progress at 0%.
+        When RUNNING or PAUSED, adjusting time extends or reduces the countdown
+        while maintaining the elapsed focus time.
+        """
+        if self.status == TimerStatus.STOPPED:
+            new_duration = max(60, min(self.total_seconds + delta_seconds, 99 * 60 + 59))
+            self.total_seconds = new_duration
+            self.remaining_seconds = new_duration
+        else:
+            elapsed = max(0, self.total_seconds - self.remaining_seconds)
+            new_remaining = max(0, min(self.remaining_seconds + delta_seconds, 99 * 60 + 59))
+            self.remaining_seconds = new_remaining
+            self.total_seconds = max(new_remaining, elapsed + new_remaining)
 
     def tick(self) -> bool:
         """Decrement by 1 second if running. Returns True if interval reached zero."""

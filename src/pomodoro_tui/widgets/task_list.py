@@ -29,6 +29,12 @@ class TaskListWidget(Widget):
         text-align: center;
         text-style: bold;
         color: $primary;
+        margin-bottom: 0;
+    }
+
+    #task_instructions {
+        text-align: center;
+        color: $text-muted;
         margin-bottom: 1;
     }
 
@@ -43,7 +49,7 @@ class TaskListWidget(Widget):
     }
 
     #input_task_est {
-        width: 12;
+        width: 14;
         margin-right: 1;
     }
 
@@ -71,34 +77,44 @@ class TaskListWidget(Widget):
 
     def __init__(self, storage: PomodoroStorage, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        
         self.storage = storage
 
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Static("📋 Task Management", id="task_header")
+            yield Static(
+                "Type a task title and press Enter to save. Click or press Enter on a row to set it Active for the timer.",
+                id="task_instructions",
+            )
 
             with Horizontal(id="add_task_bar"):
-                yield Input(placeholder="What are you working on?", id="input_task_title")
-                yield Input(placeholder="Est 🍅 (1-10)", id="input_task_est", type="integer")
+                yield Input(placeholder="What are you working on? (e.g. Refactor API)", id="input_task_title")
+                yield Input("2", placeholder="Est 🍅 (1-10)", id="input_task_est", type="integer")
                 yield Button("➕ Add Task", variant="success", id="btn_add_task")
 
             yield DataTable(id="tasks_table", cursor_type="row")
 
             with Horizontal(id="task_actions_bar"):
-                yield Button("🎯 Set Active", variant="primary", id="btn_set_active", classes="task_action_btn")
+                yield Button("🎯 Set Active [Enter]", variant="primary", id="btn_set_active", classes="task_action_btn")
                 yield Button("⚪ Clear Active", variant="default", id="btn_clear_active", classes="task_action_btn")
                 yield Button("✓ Toggle Done", variant="warning", id="btn_toggle_done", classes="task_action_btn")
                 yield Button("🗑 Delete", variant="error", id="btn_delete_task", classes="task_action_btn")
 
     def on_mount(self) -> None:
         table = self.query_one("#tasks_table", DataTable)
-        table.add_column("Active", width=8)
+        table.add_column("Active", width=10)
         table.add_column("Status", width=10)
-        table.add_column("Task Title", width=40)
+        table.add_column("Task Title", width=42)
         table.add_column("Progress", width=14)
         table.add_column("ID", width=10)
         self.refresh_tasks()
+
+    def focus_input(self) -> None:
+        """Focus the task title input field so user can type immediately."""
+        try:
+            self.query_one("#input_task_title", Input).focus()
+        except Exception:
+            pass
 
     def refresh_tasks(self) -> None:
         table = self.query_one("#tasks_table", DataTable)
@@ -116,8 +132,20 @@ class TaskListWidget(Widget):
         table = self.query_one("#tasks_table", DataTable)
         if table.row_count == 0 or table.cursor_row < 0:
             return None
-        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
-        return str(row_key.value) if row_key else None
+        try:
+            row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+            return str(row_key.value) if row_key else None
+        except Exception:
+            return None
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Pressing Enter or clicking a row sets it as the active task."""
+        if event.row_key and event.row_key.value:
+            task_id = str(event.row_key.value)
+            self.storage.set_active_task_id(task_id)
+            self.refresh_tasks()
+            active_task = self.storage.get_active_task()
+            self.post_message(self.ActiveTaskChanged(active_task))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
@@ -147,16 +175,16 @@ class TaskListWidget(Widget):
             return
 
         try:
-            est = int(est_input.value.strip()) if est_input.value.strip() else 1
+            est = int(est_input.value.strip()) if est_input.value.strip() else 2
             est = max(1, min(est, 50))
         except ValueError:
-            est = 1
+            est = 2
 
         new_task = self.storage.add_task(title=title, pomodoros_estimated=est)
         title_input.value = ""
-        est_input.value = ""
+        est_input.value = "2"
 
-        # If no active task currently, set this new task active
+        # If no active task currently, set this new task active automatically
         if not self.storage.get_active_task_id():
             self.storage.set_active_task_id(new_task.id)
             self.post_message(self.ActiveTaskChanged(new_task))

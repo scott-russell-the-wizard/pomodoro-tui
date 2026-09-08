@@ -51,15 +51,20 @@ def test_app_lifecycle_and_hotkeys():
                 assert app.timer.status == TimerStatus.STOPPED
 
                 # Tabs navigation
-                await pilot.press("2")
-                await pilot.pause()
-                assert app.query_one("#main_tabs").active == "tab_tasks"
-
                 await pilot.press("3")
                 await pilot.pause()
                 assert app.query_one("#main_tabs").active == "tab_stats"
 
                 await pilot.press("1")
+                await pilot.pause()
+                assert app.query_one("#main_tabs").active == "tab_timer"
+
+                await pilot.press("2")
+                await pilot.pause()
+                assert app.query_one("#main_tabs").active == "tab_tasks"
+
+                # Switch back to timer tab via app action
+                app.action_switch_tab("tab_timer")
                 await pilot.pause()
                 assert app.query_one("#main_tabs").active == "tab_timer"
 
@@ -78,6 +83,15 @@ def test_app_lifecycle_and_hotkeys():
                 await pilot.press("escape")
                 await pilot.pause()
                 assert not isinstance(app.screen, SettingsModal)
+
+                # Quick Add Task modal
+                await pilot.press("a")
+                await pilot.pause()
+                from pomodoro_tui.widgets.add_task_modal import AddTaskModal
+                assert isinstance(app.screen, AddTaskModal)
+                await pilot.press("escape")
+                await pilot.pause()
+                assert not isinstance(app.screen, AddTaskModal)
 
     asyncio.run(_test())
 

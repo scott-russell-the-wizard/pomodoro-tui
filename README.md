@@ -36,14 +36,28 @@ A modern, keyboard-driven Terminal User Interface (TUI) Pomodoro Timer built wit
 | **`Space`** | Start / Pause / Resume timer |
 | **`s`** | Skip current interval |
 | **`r`** | Reset current interval |
-| **`+`** / **`=`** | Add 1 minute to remaining time |
-| **`-`** | Subtract 1 minute from remaining time |
+| **`+`** / **`=`** | Add 1 minute to timer |
+| **`-`** | Subtract 1 minute from timer |
+| **`a`** | **Quick Add Task modal** (create & set active immediately) |
 | **`1`** | Switch to Timer view |
-| **`2`** or **`t`** | Switch to Tasks view |
+| **`2`** or **`t`** | Switch to Tasks view (auto-focuses task input) |
 | **`3`** | Switch to Stats & History view |
 | **`c`** | Open Settings dialog |
 | **`h`** or **`?`** | Open Help & shortcuts dialog |
 | **`q`** | Quit application |
+
+---
+
+## Audio & Notifications over SSH
+
+When running remote over SSH, Pomodoro TUI uses three complementary notification channels:
+
+1. **Terminal Bell Pulses (`\07\07\07`)**: Sent directly through the Textual terminal driver.
+   - **macOS Terminal**: In *Settings -> Profiles -> Advanced -> Bell*, ensure **Audible bell** is checked.
+   - **iTerm2**: In *Settings -> Profiles -> Terminal -> Notifications*, check **Ring bell** and ensure **Silence bell** is unchecked.
+   - **Windows Terminal**: In *Settings -> Profile -> Advanced*, set **Bell style** to **Audible** (or **All**).
+2. **OSC 9 & OSC 777 Escape Sequences**: Emits standard terminal desktop notification codes that modern terminal emulators (iTerm2, Kitty, WezTerm, Windows Terminal) intercept to display native OS toasts on your local laptop screen even across an SSH session.
+3. **In-TUI Toast Notification**: A high-visibility 10-second toast popup is displayed inside the terminal window.
 
 ---
 

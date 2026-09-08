@@ -128,4 +128,4 @@ class TimerDisplay(Widget):
                 f"🎯 Active Task: [bold]{active_task.title}[/] ({active_task.pomodoros_completed}/{active_task.pomodoros_estimated} 🍅)"
             )
         else:
-            task_banner.update("🎯 Active Task: None (Press [bold]t[/bold] to manage tasks)")
+            task_banner.update("🎯 Active Task: None  (Press [bold green]a[/] to Add Task • [bold cyan]t[/] for Tasks List)")

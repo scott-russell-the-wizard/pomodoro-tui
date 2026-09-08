@@ -5,7 +5,7 @@ Main application module for Pomodoro TUI.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -16,11 +16,13 @@ from pomodoro_tui.models import (
     CompletedSession,
     PomodoroSettings,
     SessionType,
+    Task,
     TimerStatus,
 )
 from pomodoro_tui.notifications import NotificationManager
 from pomodoro_tui.storage import PomodoroStorage
 from pomodoro_tui.timer import PomodoroTimer
+from pomodoro_tui.widgets.add_task_modal import AddTaskModal
 from pomodoro_tui.widgets.controls import TimerControls
 from pomodoro_tui.widgets.help_modal import HelpModal
 from pomodoro_tui.widgets.settings_modal import SettingsModal
@@ -42,13 +44,12 @@ class PomodoroApp(App):
         Binding("r", "reset_session", "Reset"),
         Binding("equal,plus", "add_minute", "+1m"),
         Binding("minus", "sub_minute", "-1m"),
+        Binding("a", "open_add_task", "Add Task"),
         Binding("1", "switch_tab('tab_timer')", "Timer"),
-        Binding("2", "switch_tab('tab_tasks')", "Tasks"),
-        Binding("t", "switch_tab('tab_tasks')", "Tasks"),
+        Binding("2,t", "switch_tab('tab_tasks')", "Tasks"),
         Binding("3", "switch_tab('tab_stats')", "Stats"),
         Binding("c", "open_settings", "Settings"),
-        Binding("h", "open_help", "Help"),
-        Binding("question_mark", "open_help", "Help"),
+        Binding("h,question_mark", "open_help", "Help"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -82,7 +83,7 @@ class PomodoroApp(App):
                     yield TimerDisplay(id="timer_display")
                     yield TimerControls(id="timer_controls")
                     yield Static(
-                        "[dim][Space] Start/Pause  [s] Skip  [r] Reset  [+/-] Time  [c] Settings  [h/?] Help  [q] Quit[/dim]",
+                        "[dim][Space] Start/Pause  [s] Skip  [r] Reset  [+/-] Time  [a] Add Task  [t] Tasks  [c] Settings  [h/?] Help  [q] Quit[/dim]",
                         id="hotkey_bar",
                     )
 
@@ -98,6 +99,14 @@ class PomodoroApp(App):
         """Start the interval ticker and refresh initial display."""
         self._update_all_displays()
         self._ticker_interval = self.set_interval(1.0, self._on_tick)
+
+    def _write_terminal(self, text: str) -> None:
+        """Low-level terminal writer through Textual's driver."""
+        if not self.is_headless and self._driver is not None:
+            try:
+                self._driver.write(text)
+            except Exception:
+                pass
 
     def _update_all_displays(self) -> None:
         """Update timer display, controls, and active task banner."""
@@ -143,20 +152,27 @@ class PomodoroApp(App):
         # Advance state
         _, next_type = self.timer.advance_session(was_completed=True)
 
-        # Notify
-        self.notifications.notify_session_complete(finished_type, next_type)
+        # Ring console bell via Textual driver and send OSC escape sequences
+        self.bell()
+        self.notifications.notify_session_complete(
+            finished_type,
+            next_type,
+            terminal_write=self._write_terminal,
+        )
 
         if finished_type == SessionType.WORK:
             self.notify(
                 f"Completed focus session! Take a {next_type.display_name.lower()}.",
                 title="Focus Complete! 🍅",
                 severity="information",
+                timeout=10,
             )
         else:
             self.notify(
                 "Break over! Ready for next focus session.",
                 title="Break Finished ☕",
                 severity="information",
+                timeout=10,
             )
 
         self._update_all_displays()
@@ -191,12 +207,35 @@ class PomodoroApp(App):
 
     def action_switch_tab(self, tab_id: str) -> None:
         """Switch active tab in TabbedContent."""
+        self.set_focus(None)
         tabs = self.query_one("#main_tabs", TabbedContent)
         tabs.active = tab_id
         if tab_id == "tab_tasks":
-            self.query_one("#task_list_widget", TaskListWidget).refresh_tasks()
+            task_widget = self.query_one("#task_list_widget", TaskListWidget)
+            task_widget.refresh_tasks()
+            task_widget.focus_input()
         elif tab_id == "tab_stats":
             self.query_one("#stats_widget", StatsWidget).refresh_stats()
+
+    def action_open_add_task(self) -> None:
+        """Open quick modal to create and optionally activate a task."""
+        def handle_add_task_result(result: Optional[Tuple[Task, bool]]) -> None:
+            if result is not None:
+                task_obj, set_active = result
+                saved_task = self.storage.add_task(task_obj.title, task_obj.pomodoros_estimated)
+                if set_active:
+                    self.storage.set_active_task_id(saved_task.id)
+                    self.notify(f"Activated: {saved_task.title} 🍅", title="Task Active")
+                else:
+                    self.notify(f"Added: {saved_task.title}", title="Task Added")
+
+                try:
+                    self.query_one("#task_list_widget", TaskListWidget).refresh_tasks()
+                except Exception:
+                    pass
+                self._update_all_displays()
+
+        self.push_screen(AddTaskModal(), handle_add_task_result)
 
     def action_open_settings(self) -> None:
         """Show settings modal."""

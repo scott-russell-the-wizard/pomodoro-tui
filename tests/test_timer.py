@@ -63,12 +63,41 @@ def test_timer_advance_to_long_break():
     assert timer.remaining_seconds == 15 * 60
 
 
-def test_timer_adjust_time():
+def test_timer_adjust_time_while_stopped():
     timer = PomodoroTimer(PomodoroSettings(work_minutes=10))
+    assert timer.status == TimerStatus.STOPPED
+    assert timer.progress_fraction == 0.0
+
+    # Increase 1 minute: remaining and total both 11m, progress stays 0%
     timer.adjust_time(60)
     assert timer.remaining_seconds == 11 * 60
+    assert timer.total_seconds == 11 * 60
+    assert timer.progress_fraction == 0.0
+
+    # Decrease 2 minutes: remaining and total both 9m, progress stays 0%
     timer.adjust_time(-120)
     assert timer.remaining_seconds == 9 * 60
+    assert timer.total_seconds == 9 * 60
+    assert timer.progress_fraction == 0.0
+
+
+def test_timer_adjust_time_while_running():
+    timer = PomodoroTimer(PomodoroSettings(work_minutes=10))
+    timer.start()
+    # Simulate 2 minutes of work (120 seconds)
+    for _ in range(120):
+        timer.tick()
+    assert timer.remaining_seconds == 8 * 60
+    assert timer.total_seconds == 10 * 60
+    # 2m elapsed of 10m = 20%
+    assert abs(timer.progress_fraction - 0.20) < 0.01
+
+    # Add 5 minutes: remaining is 13m, total becomes 15m, elapsed is still 2m
+    timer.adjust_time(300)
+    assert timer.remaining_seconds == 13 * 60
+    assert timer.total_seconds == 15 * 60
+    # 2m elapsed of 15m = 13.3%
+    assert abs(timer.progress_fraction - (120 / 900)) < 0.01
 
 
 def test_timer_reset():
