@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pomodoro-tui"
+version = "1.0.0"
+description = "A modern, feature-rich Terminal User Interface (TUI) Pomodoro Timer built with Textual."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Scott Russell", email = "scootr@google.com" }
+]
+keywords = ["pomodoro", "tui", "timer", "productivity", "terminal", "textual"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "textual>=0.80.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[project.scripts]
+pomodoro-tui = "pomodoro_tui.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

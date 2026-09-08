@@ -1,0 +1,42 @@
+/* Main Application Styling */
+
+Screen {
+    background: $background;
+    color: $text;
+}
+
+Header {
+    background: $primary-darken-2;
+    color: $text;
+    dock: top;
+    height: 1;
+}
+
+Footer {
+    background: $surface;
+    color: $text-muted;
+    dock: bottom;
+    height: 1;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1;
+}
+
+/* Timer View Tab */
+#tab_timer {
+    align: center top;
+    height: 1fr;
+}
+
+/* Quick Hotkey hint row */
+#hotkey_bar {
+    width: 100%;
+    text-align: center;
+    color: $text-muted;
+    margin-top: 1;
+}
