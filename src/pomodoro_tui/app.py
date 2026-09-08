@@ -217,6 +217,22 @@ class PomodoroApp(App):
         elif tab_id == "tab_stats":
             self.query_one("#stats_widget", StatsWidget).refresh_stats()
 
+    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        """Invoked when user clicks or activates a tab pane."""
+        pane_id = getattr(event.pane, "id", None)
+        if pane_id == "tab_tasks":
+            try:
+                task_widget = self.query_one("#task_list_widget", TaskListWidget)
+                task_widget.refresh_tasks()
+                task_widget.focus_input()
+            except Exception:
+                pass
+        elif pane_id == "tab_stats":
+            try:
+                self.query_one("#stats_widget", StatsWidget).refresh_stats()
+            except Exception:
+                pass
+
     def action_open_add_task(self) -> None:
         """Open quick modal to create and optionally activate a task."""
         def handle_add_task_result(result: Optional[Tuple[Task, bool]]) -> None:

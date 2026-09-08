@@ -21,8 +21,13 @@ class TaskListWidget(Widget):
     DEFAULT_CSS = """
     TaskListWidget {
         width: 100%;
-        height: 100%;
-        padding: 1 2;
+        height: 1fr;
+        padding: 0 1;
+    }
+
+    #task_main_container {
+        width: 100%;
+        height: 1fr;
     }
 
     #task_header {
@@ -65,6 +70,7 @@ class TaskListWidget(Widget):
 
     #tasks_table {
         height: 1fr;
+        min-height: 8;
         border: solid $primary;
     }
     """
@@ -80,7 +86,7 @@ class TaskListWidget(Widget):
         self.storage = storage
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(id="task_main_container"):
             yield Static("📋 Task Management", id="task_header")
             yield Static(
                 "Type a task title and press Enter to save. Click or press Enter on a row to set it Active for the timer.",

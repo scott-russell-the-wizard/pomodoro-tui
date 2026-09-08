@@ -19,8 +19,13 @@ class StatsWidget(Widget):
     DEFAULT_CSS = """
     StatsWidget {
         width: 100%;
-        height: 100%;
-        padding: 1 2;
+        height: 1fr;
+        padding: 0 1;
+    }
+
+    #stats_main_container {
+        width: 100%;
+        height: 1fr;
     }
 
     #stats_title {
@@ -80,17 +85,17 @@ class StatsWidget(Widget):
 
     #history_table {
         height: 1fr;
+        min-height: 8;
         border: solid $accent;
     }
     """
 
     def __init__(self, storage: PomodoroStorage, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        
         self.storage = storage
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(id="stats_main_container"):
             yield Static("📊 Daily Statistics & History", id="stats_title")
 
             with Grid(classes="stats_summary_grid"):
@@ -152,7 +157,6 @@ class StatsWidget(Widget):
         history = self.storage.get_history(limit=50)
 
         for s in history:
-            # Parse completed_at
             try:
                 time_str = s.completed_at.replace("T", " ")[:16]
             except Exception:

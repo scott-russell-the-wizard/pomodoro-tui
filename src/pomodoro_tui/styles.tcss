@@ -24,12 +24,21 @@ TabbedContent {
 }
 
 TabPane {
-    padding: 1;
+    height: 1fr;
+    padding: 0 1;
 }
 
 /* Timer View Tab */
 #tab_timer {
     align: center top;
+    height: 1fr;
+}
+
+#tab_tasks {
+    height: 1fr;
+}
+
+#tab_stats {
     height: 1fr;
 }
 

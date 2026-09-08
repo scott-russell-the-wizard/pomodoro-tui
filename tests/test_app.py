@@ -132,3 +132,32 @@ def test_app_task_linking_and_session_completion():
                 assert stats.completed_pomodoros == 1
 
     asyncio.run(_test())
+
+
+def test_tables_geometry_and_visibility():
+    async def _test():
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            app = PomodoroApp(data_dir=Path(tmp_dir))
+            async with app.run_test() as pilot:
+                await pilot.pause()
+
+                # Add a task so table has content
+                app.storage.add_task("Test task visibility", pomodoros_estimated=3)
+
+                # Switch to tasks tab
+                app.action_switch_tab("tab_tasks")
+                await pilot.pause()
+
+                from textual.widgets import DataTable
+                tasks_table = app.query_one("#tasks_table", DataTable)
+                assert tasks_table.size.height > 0
+                assert tasks_table.row_count == 1
+
+                # Switch to stats tab
+                app.action_switch_tab("tab_stats")
+                await pilot.pause()
+
+                stats_table = app.query_one("#history_table", DataTable)
+                assert stats_table.size.height > 0
+
+    asyncio.run(_test())
